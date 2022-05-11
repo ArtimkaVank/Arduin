@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Arduino</title>
+</head>
+<body>
+<h4>#include &lt;TimeLib.h&lt; // подключение библиотеки время</br>
+#include &lt;Wire.h&lt; // пожключение библиотеки для связи с ардуино и экрана</br>
+#include &lt;DS1307RTC.h&lt; // библиотека реального времени</br>
+#include &lt;SoftwareSerial.h&lt; // подключение библиотеки экрана</br>
+#include "DHT.h" // подключение библиотеки температуры и влажности</br>
+#include &lt;Arduino.h&lt; // библиотека для работы аналогового входа</br>
+#include &lt;MHZ.h&lt; // подключение библиотеки для датчика углекислого газа</br>
+#define DHTpin 8 // подключение датчика температуры и влажности к цифровому пину 8</br>
+#define MHZpin 7 // подключение датчика углекислого газа к цифровому пину 7</br>
+#define UPLEVEIpin 4 // подключение верхнего уровня воды к пину 4</br>
+#define DOWNLEVEIpin 3 // подключение нижнего уровня воды к пину 4</br>
+#define PUMPpin 13 // подключение насоса к пину 13</br>
+#define LIGHTpin 12 // подключение лампы к пину 12</br>
+SoftwareSerial mySerial (5,6); // подключение экрана</br>
+DHT dht (DHTpin, DHT22); // определение модели датчика температуры и влажности</br>
+MHZ co2(MHZpin, MHZ19B); // определение модели датчика углекислого газа</br>
+int message; // создание переменной</br>
+void setup () {</br>
+mySerial.begin (9600); // активирование серийного порта экрана</br>
+Serial.begin (9600); // активирование серийного порта монитора</br>
+dht.begin();// запуск датчика температуры и влажности</br>
+setSyncProvider(RTC.get); //считывание данных с экрана</br>
+pinMode (DOWNLEVEIpin,INPUT_PULLUP); // включение внутреннего резистора нижнего датчика воды</br>
+pinMode (UPLEVEIpin,INPUT_PULLUP); // включение внутреннего резистора верхнего датчика воды</br>
+pinMode (MHZpin,INPUT); // принимает сигнал с датчика углекислого газа</br>
+pinMode (PUMPpin,OUTPUT); // принимает сигнал с насоса</br>
+pinMode (LIGHTpin,OUTPUT); // сигнал с лампы</br>
+digitalWrite(PUMPpin, HIGH); // выключение насоса через реле</br>
+digitalWrite(LIGHTpin, HIGH); // выключение лампы через реле</br>
+}</br>
+void loop () {</br>
+int h=hour(); //целочисленная часы</br>
+int m=minute();//целочисленная переменная минуты</br>
+mySerial.print((String)"n1.val="+h+char(255)+char(255)+char(255)); // выводим на экран данные часов</br>
+mySerial.print((String)"n2.val="+m+char(255)+char(255)+char(255)); // выводим на экран данные минут</br>
+int T = dht. readTemperature(); // считываем в переменную данные температуры</br>
+int H = dht. readHumidity();// считываем в переменную данные влажность</br>
+mySerial.print((String)"n3.val="+T+char(255)+char(255)+char(255));// выводим на экран данные температуры</br>
+mySerial.print((String)"n4.val="+H+char(255)+char(255)+char(255)); // выводим на экран данные влажности</br>
+if(digitalRead(DOWNLEVEIpin) == LOW){ //если на нижнем датчике воды низкий уровень воды, то изменяется картинка</br>
+if(digitalRead(UPLEVEIpin) == LOW){ // если на верхнем датчике воды низкий уровень воды, то изменяется картинка</br>
+mySerial.print((String)"p0.pic="+1+char(255)+char(255)+char(255)); // изменение картинки уровня воды зеленый</br>
+}</br>
+else{</br>
+mySerial.print((String)"p0.pic="+2+char(255)+char(255)+char(255));// изменение картинки уровня воды на желтый</br>
+}</br>
+}</br>
+else{</br>
+mySerial.print((String)"p0.pic="+0+char(255)+char(255)+char(255));// изменение картинки уровня воды на красный</br>
+}</br>
+int ppm = co2.readCO2PWM(); // углекислый газ</br>
+mySerial.print((String)"n5.val="+ppm+char(255)+char(255)+char(255));//вывод данных на экран</br>
+if(T<22 or T>60){ //если температура меньше 22 и больше 60, то значение выделяется красным</br>
+mySerial.print((String)"n3.pco="+63488+char(255)+char(255)+char(255));</br>
+}</br>
+else{</br>
+mySerial.print((String)"n3.pco="+0+char(255)+char(255)+char(255)); // изменеие цвета на черный</br>
+}</br>
+if(H<50 or H>60){ //влажность меньше 50 и больше 60, то знаение загорается красным</br>
+mySerial.print((String)"n4.pco="+63488+char(255)+char(255)+char(255));</br>
+}</br>
+else{</br>
+mySerial.print((String)"n4.pco="+0+char(255)+char(255)+char(255));// изменеие цвета на черный</br>
+}</br>
+if(ppm<800 or ppm>1000){ // если углекислый газ меньше 800 и больше 1000, то значение выделяется красным</br>
+mySerial.print((String)"n5.pco="+63488+char(255)+char(255)+char(255));</br>
+}</br>
+else{</br>
+mySerial.print((String)"n5.pco="+0+char(255)+char(255)+char(255));// изменеие цвета на черный</br>
+}</br>
+}</br></h4>
+</body>
+</html>
